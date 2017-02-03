@@ -10,17 +10,17 @@ dataframe = dataframe.drop(["Field6", "Field9", "rowid"], axis=1) # Remove colum
 
 #dataframe.loc[:, ("y1")] = [1, 1, 1, 0, 0, 1, 0, 1, 1, 1] # This is our friend's list of which houses she liked
                                                           # 1 = good, 0 = bad
-#dataframe.loc[:, ("y2")] = dataframe["y1"] == 0           # y2 is the negation of y1
-#dataframe.loc[:, ("y2")] = dataframe["y2"].astype(int)    # Turn TRUE/FALSE values into 1/0
+dataframe.loc[:, ("y2")] = dataframe["y1"] == 0           # y2 is the negation of y1
+dataframe.loc[:, ("y2")] = dataframe["y2"].astype(int)    # Turn TRUE/FALSE values into 1/0
 # y2 means we don't like a house
 # (Yes, it's redundant. But learning to do it this way opens the door to Multiclass classification)
 #dataframe # How is our dataframe looking now?
 
 inputX = dataframe.loc[:, ['Field2', 'Field3', 'Field4', 'Field5', 'Field7', 'Field8', 'Field10']].as_matrix()
-inputY = dataframe.loc[:, ["y1"]].as_matrix()
+inputY = dataframe.loc[:, ["y1", "y2"]].as_matrix()
 
 # Parameters
-learning_rate = 0.001
+learning_rate = 0.0001
 training_epochs = 2000
 display_step = 50
 n_samples = inputY.size
@@ -30,10 +30,10 @@ x = tf.placeholder(tf.float32, [None, 7])   # Okay TensorFlow, we'll feed you an
                                             # "None" means we can feed you any number of examples
                                             # Notice we haven't fed it the values yet
             
-W = tf.Variable(tf.zeros([7, 1]))           # Maintain a 2 x 2 float matrix for the weights that we'll keep updating 
+W = tf.Variable(tf.zeros([7, 2]))           # Maintain a 2 x 2 float matrix for the weights that we'll keep updating 
                                             # through the training process (make them all zero to begin with)
     
-b = tf.Variable(tf.zeros([1]))              # Also maintain two bias values
+b = tf.Variable(tf.zeros([2]))              # Also maintain two bias values
 
 y_values = tf.add(tf.matmul(x, W), b)       # The first step in calculating the prediction would be to multiply
                                             # the inputs matrix by the weights matrix then add the biases
@@ -41,8 +41,7 @@ y_values = tf.add(tf.matmul(x, W), b)       # The first step in calculating the 
 y = tf.nn.softmax(y_values)                 # Then we use softmax as an "activation function" that translates the
                                             # numbers outputted by the previous layer into probability form
     
-y_ = tf.placeholder(tf.float32, [None,1])   # For training purposes, we'll also feed you a matrix of labels
-
+y_ = tf.placeholder(tf.float32, [None,2])   # For training purposes, we'll also feed you a matrix of labels
 # Cost function: Mean squared error
 cost = tf.reduce_sum(tf.pow(y_ - y, 2))/(2*n_samples)
 # Gradient descent
