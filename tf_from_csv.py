@@ -1,66 +1,73 @@
-import pandas as pd              # A beautiful library to help us work with data as tables
-import numpy as np               # So we can use number matrices. Both pandas and TensorFlow need it. 
-import matplotlib.pyplot as plt  # Visualize the things
-import tensorflow as tf          # Fire from the gods
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+import pandas as pd
 
-dataframe = pd.read_csv("jfkspxs.csv") # Let's have Pandas load our dataset as a dataframe
+dataframe = pd.read_csv("jfkspxstrain.csv") # Let's have Pandas load our dataset as a dataframe
 dataframe = dataframe.drop(["Field6", "Field9", "rowid"], axis=1) # Remove columns we don't care about
-#dataframe = dataframe[0:10] # We'll only use the first 10 rows of the dataset in this example
-#dataframe # Let's have the notebook show us how the dataframe looks now
-
-#dataframe.loc[:, ("y1")] = [1, 1, 1, 0, 0, 1, 0, 1, 1, 1] # This is our friend's list of which houses she liked
-                                                          # 1 = good, 0 = bad
 dataframe.loc[:, ("y2")] = dataframe["y1"] == 0           # y2 is the negation of y1
 dataframe.loc[:, ("y2")] = dataframe["y2"].astype(int)    # Turn TRUE/FALSE values into 1/0
-# y2 means we don't like a house
-# (Yes, it's redundant. But learning to do it this way opens the door to Multiclass classification)
-#dataframe # How is our dataframe looking now?
+trainX = dataframe.loc[:, ['Field2', 'Field3', 'Field4', 'Field5', 'Field7', 'Field8', 'Field10']].as_matrix()
+trainY = dataframe.loc[:, ["y1", 'y2']].as_matrix()
 
-inputX = dataframe.loc[:, ['Field2', 'Field3', 'Field4', 'Field5', 'Field7', 'Field8', 'Field10']].as_matrix()
-inputY = dataframe.loc[:, ["y1", "y2"]].as_matrix()
+dataframe = pd.read_csv("jfkspxstest.csv") # Let's have Pandas load our dataset as a dataframe
+dataframe = dataframe.drop(["Field6", "Field9", "rowid"], axis=1) # Remove columns we don't care about
+dataframe.loc[:, ("y2")] = dataframe["y1"] == 0           # y2 is the negation of y1
+dataframe.loc[:, ("y2")] = dataframe["y2"].astype(int)    # Turn TRUE/FALSE values into 1/0
+testX = dataframe.loc[:, ['Field2', 'Field3', 'Field4', 'Field5', 'Field7', 'Field8', 'Field10']].as_matrix()
+testY = dataframe.loc[:, ["y1", 'y2']].as_matrix()
 
-# Parameters
-learning_rate = 0.0001
-training_epochs = 2000
-display_step = 50
-n_samples = inputY.size
+n_nodes_hl1 = 5
+n_nodes_hl2 = 5
+n_nodes_hl3 = 5
 
-x = tf.placeholder(tf.float32, [None, 7])   # Okay TensorFlow, we'll feed you an array of examples. Each example will
-                                            # be an array of two float values (area, and number of bathrooms).
-                                            # "None" means we can feed you any number of examples
-                                            # Notice we haven't fed it the values yet
-            
-W = tf.Variable(tf.zeros([7, 2]))           # Maintain a 2 x 2 float matrix for the weights that we'll keep updating 
-                                            # through the training process (make them all zero to begin with)
-    
-b = tf.Variable(tf.zeros([2]))              # Also maintain two bias values
+n_classes = 2
+batch_size = 1
 
-y_values = tf.add(tf.matmul(x, W), b)       # The first step in calculating the prediction would be to multiply
-                                            # the inputs matrix by the weights matrix then add the biases
-    
-y = tf.nn.softmax(y_values)                 # Then we use softmax as an "activation function" that translates the
-                                            # numbers outputted by the previous layer into probability form
-    
-y_ = tf.placeholder(tf.float32, [None,2])   # For training purposes, we'll also feed you a matrix of labels
-# Cost function: Mean squared error
-cost = tf.reduce_sum(tf.pow(y_ - y, 2))/(2*n_samples)
-# Gradient descent
-optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
+x = tf.placeholder('float',[None, 7])
+y = tf.placeholder('float')
 
-# Initialize variabls and tensorflow session
-init = tf.initialize_all_variables()
-sess = tf.Session()
-sess.run(init)
+def neural_network_model(data):
+	hidden_1_layer = {'weights':tf.Variable(tf.random_normal([7, n_nodes_hl1])),
+				      'biases':tf.Variable(tf.random_normal([n_nodes_hl1]))}
 
-for i in range(training_epochs):  
-    sess.run(optimizer, feed_dict={x: inputX, y_: inputY}) # Take a gradient descent step using our inputs and labels
+	hidden_2_layer = {'weights':tf.Variable(tf.random_normal([n_nodes_hl1, n_nodes_hl2])),
+				      'biases':tf.Variable(tf.random_normal([n_nodes_hl2]))}
 
-    # That's all! The rest of the cell just outputs debug messages. 
-    # Display logs per epoch step
-    if (i) % display_step == 0:
-        cc = sess.run(cost, feed_dict={x: inputX, y_:inputY})
-        print ("Training step:", '%04d' % (i), "cost=", "{:.9f}".format(cc)) #, \"W=", sess.run(W), "b=", sess.run(b)
+	hidden_3_layer = {'weights':tf.Variable(tf.random_normal([n_nodes_hl2, n_nodes_hl3])),
+				      'biases':tf.Variable(tf.random_normal([n_nodes_hl3]))}
 
-print ("Optimization Finished!")
-#training_cost = sess.run(cost, feed_dict={x: inputX, y_: inputY})
-#print "Training cost=", training_cost, "W=", sess.run(W), "b=", sess.run(b), '\n'
+	output_layer = {'weights':tf.Variable(tf.random_normal([n_nodes_hl1, n_classes])),
+				      'biases':tf.Variable(tf.random_normal([n_classes]))}
+	l1 = tf.add(tf.matmul(data, hidden_1_layer['weights']), hidden_1_layer['biases'])
+	l1 = tf.nn.relu(l1)
+
+	l2 = tf.add(tf.matmul(l1, hidden_2_layer['weights']), hidden_2_layer['biases'])
+	l2 = tf.nn.relu(l2)
+
+	l3 = tf.add(tf.matmul(l2, hidden_3_layer['weights']), hidden_3_layer['biases'])
+	l3 = tf.nn.relu(l3)
+
+	output = tf.matmul(l3, output_layer['weights']) + output_layer['biases']	
+	return output
+
+def train_neural_network(x):
+	prediction = neural_network_model(x)
+	cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(prediction,y))
+	optimizer = tf.train.AdamOptimizer().minimize(cost)
+
+	hm_epochs = 50
+
+	with tf.Session() as sess:
+		sess.run(tf.initialize_all_variables())
+
+		for epoch in range(hm_epochs):
+			epoch_loss = .01
+			for _ in range(518):
+				_, c = sess.run([optimizer, cost], feed_dict = {x: trainX, y: trainY})
+				epoch_loss += c
+			print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+		
+		correct = tf.equal(tf.argmax(prediction,1), tf.argmax(y,1))
+		accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
+		print('Accuracy:',accuracy.eval({x: testX, y: testY}))
+train_neural_network(x)
