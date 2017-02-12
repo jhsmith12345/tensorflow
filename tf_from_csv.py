@@ -70,4 +70,6 @@ def train_neural_network(x):
 		correct = tf.equal(tf.argmax(prediction,1), tf.argmax(y,1))
 		accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 		print('Accuracy:',accuracy.eval({x: testX, y: testY}))
+		classification = sess.run(y, feed_dict={x: [[51.0,10.0,71.0,65.0,5.0,70.0,30.06]]})
+		print(classification)
 train_neural_network(x)
