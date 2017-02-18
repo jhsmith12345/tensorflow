@@ -1,33 +1,30 @@
 import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
 import pandas as pd
 
-dataframe = pd.read_csv("jfkspxstrain.csv") # Let's have Pandas load our dataset as a dataframe
-dataframe = dataframe.drop(["Field6", "Field9", "rowid"], axis=1) # Remove columns we don't care about
-dataframe.loc[:, ("y2")] = dataframe["y1"] == 0           # y2 is the negation of y1
+dataframe = pd.read_csv("train.csv") # Let's have Pandas load our dataset as a dataframe
+dataframe.loc[:, ("y2")] = dataframe["y"] == 0           # y2 is the negation of y1
 dataframe.loc[:, ("y2")] = dataframe["y2"].astype(int)    # Turn TRUE/FALSE values into 1/0
-trainX = dataframe.loc[:, ['Field2', 'Field3', 'Field4', 'Field5', 'Field7', 'Field8', 'Field10']].as_matrix()
-trainY = dataframe.loc[:, ["y1", 'y2']].as_matrix()
+trainX = dataframe.loc[:, ['a', 'b']].as_matrix()
+trainY = dataframe.loc[:, ["y", 'y2']].as_matrix()
 
-dataframe = pd.read_csv("jfkspxstest.csv") # Let's have Pandas load our dataset as a dataframe
-dataframe = dataframe.drop(["Field6", "Field9", "rowid"], axis=1) # Remove columns we don't care about
-dataframe.loc[:, ("y2")] = dataframe["y1"] == 0           # y2 is the negation of y1
+dataframe = pd.read_csv("test.csv") # Let's have Pandas load our dataset as a dataframe
+dataframe.loc[:, ("y2")] = dataframe["y"] == 0           # y2 is the negation of y1
 dataframe.loc[:, ("y2")] = dataframe["y2"].astype(int)    # Turn TRUE/FALSE values into 1/0
-testX = dataframe.loc[:, ['Field2', 'Field3', 'Field4', 'Field5', 'Field7', 'Field8', 'Field10']].as_matrix()
-testY = dataframe.loc[:, ["y1", 'y2']].as_matrix()
+testX = dataframe.loc[:, ['a', 'b']].as_matrix()
+testY = dataframe.loc[:, ["y", 'y2']].as_matrix()
 
-n_nodes_hl1 = 5
-n_nodes_hl2 = 5
-n_nodes_hl3 = 5
+n_nodes_hl1 = 10
+n_nodes_hl2 = 10
+n_nodes_hl3 = 10
 
 n_classes = 2
 batch_size = 1
 
-x = tf.placeholder('float',[None, 7])
+x = tf.placeholder('float',[None, 2])
 y = tf.placeholder('float')
 
 def neural_network_model(data):
-	hidden_1_layer = {'weights':tf.Variable(tf.random_normal([7, n_nodes_hl1])),
+	hidden_1_layer = {'weights':tf.Variable(tf.random_normal([2, n_nodes_hl1])),
 				      'biases':tf.Variable(tf.random_normal([n_nodes_hl1]))}
 
 	hidden_2_layer = {'weights':tf.Variable(tf.random_normal([n_nodes_hl1, n_nodes_hl2])),
@@ -55,14 +52,14 @@ def train_neural_network(x):
 	cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(prediction,y))
 	optimizer = tf.train.AdamOptimizer().minimize(cost)
 
-	hm_epochs = 50
+	hm_epochs = 10
 
 	with tf.Session() as sess:
 		sess.run(tf.initialize_all_variables())
 
 		for epoch in range(hm_epochs):
-			epoch_loss = .01
-			for _ in range(518):
+			epoch_loss = 1
+			for _ in range(10):
 				_, c = sess.run([optimizer, cost], feed_dict = {x: trainX, y: trainY})
 				epoch_loss += c
 			print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
@@ -70,6 +67,7 @@ def train_neural_network(x):
 		correct = tf.equal(tf.argmax(prediction,1), tf.argmax(y,1))
 		accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 		print('Accuracy:',accuracy.eval({x: testX, y: testY}))
-		classification = sess.run(y, feed_dict={x: [[51.0,10.0,71.0,65.0,5.0,70.0,30.06]]})
-		print(classification)
+		classification = prediction.eval(feed_dict={x: [[9,3]]})
+		print (classification)
 train_neural_network(x)
+
